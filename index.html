@@ -36,24 +36,25 @@
         }
 
         .content-box {
-            max-width: 480px; width: 85%; padding: 2.5rem;
+            max-width: 480px; width: 85%; padding: 2rem;
             border: 1px solid var(--gold); text-align: center;
             background: rgba(15, 23, 42, 0.9);
         }
 
-        .content-box h2 { color: var(--gold); letter-spacing: 0.4rem; margin-bottom: 1.5rem; }
-        .content-box ul { text-align: left; font-size: 0.85rem; line-height: 1.8; padding-left: 1rem; margin-bottom: 2rem; }
-        .content-box li { margin-bottom: 8px; list-style-type: '✦ '; }
+        .content-box h2 { color: var(--gold); letter-spacing: 0.4rem; margin-bottom: 1rem; }
+        
+        /* オンラインランキング表示エリア */
+        .online-ranking {
+            margin: 1rem 0; padding: 0.5rem; border-top: 1px solid rgba(212, 175, 55, 0.3);
+            max-height: 150px; overflow-y: auto; font-size: 0.8rem; text-align: left;
+        }
+        .rank-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
         .container {
             background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(20px);
-            padding: 2.5rem;
+            backdrop-filter: blur(20px); padding: 2.5rem;
             border: 1px solid rgba(212, 175, 55, 0.3);
-            text-align: center;
-            width: 90%;
-            max-width: 500px;
-            display: none;
+            text-align: center; width: 90%; max-width: 500px; display: none;
         }
 
         .life-area { color: var(--safety); font-size: 0.8rem; margin-bottom: 10px; letter-spacing: 0.2rem; }
@@ -65,16 +66,13 @@
         #timer-bar { width: 100%; height: 100%; background: var(--gold); transition: width 0.1s linear; }
 
         .btn-group { display: flex; gap: 12px; margin: 20px 0; justify-content: center; }
-        
         button {
             background: transparent; color: var(--silver); border: 1px solid var(--silver);
             padding: 15px; cursor: pointer; transition: all 0.3s;
             letter-spacing: 0.1rem; font-family: inherit; flex: 1;
         }
         button:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
-        
         .hint { border-color: var(--safety) !important; box-shadow: 0 0 15px var(--safety); color: var(--safety) !important; }
-
         .special-panel { display: none; border: 1px double var(--gold); padding: 15px; margin-top: 15px; animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -86,12 +84,10 @@
 <div id="intro-overlay" class="overlay">
     <div class="content-box">
         <h2>ORACULUM</h2>
-        <ul>
-            <li><strong>守護の輝石:</strong> ミスを1回無効化。流星で増えることも。</li>
-            <li><strong>導きの光:</strong> 5連勝ごとに次の正解が緑色に輝く。</li>
-            <li><strong>聖者の賭け:</strong> 3連勝ごとに1/3で2点獲得の試練。</li>
-            <li><strong>特殊イベント:</strong> 双子の月(全正解)や等価交換(1/4で3点)など。</li>
-        </ul>
+        <div id="online-rank-list" class="online-ranking">
+            <div style="text-align:center; opacity:0.5;">神託を受信中...</div>
+        </div>
+        <p style="font-size:0.7rem; opacity:0.6; margin-bottom:1rem;">世界の神託者たちの最高記録</p>
         <button style="width:100%; border-color:var(--gold); color:var(--gold);" onclick="startGame()">儀式を始める</button>
     </div>
 </div>
@@ -114,15 +110,13 @@
 
     <div id="quad-ui" style="display:none;">
         <div class="btn-group">
-            <button onclick="play(4, 0)">I</button>
-            <button onclick="play(4, 1)">II</button>
-            <button onclick="play(4, 2)">III</button>
-            <button onclick="play(4, 3)">IV</button>
+            <button onclick="play(4, 0)">I</button><button onclick="play(4, 1)">II</button>
+            <button onclick="play(4, 2)">III</button><button onclick="play(4, 3)">IV</button>
         </div>
     </div>
 
     <div id="branch-ui" class="special-panel">
-        <p style="font-size:0.75rem; margin-bottom:10px; color:var(--gold);">― 運命の分岐点 ―</p>
+        <p style="font-size:0.75rem; color:var(--gold);">― 運命の分岐点 ―</p>
         <div class="btn-group">
             <button onclick="setupMode('normal')">通常の道 (1/2)</button>
             <button style="border-color:var(--accent); color:var(--accent);" onclick="setupMode('gamble')">聖者の賭け (1/3)</button>
@@ -131,13 +125,15 @@
 
     <div id="triple-ui" class="special-panel">
         <div class="btn-group">
-            <button onclick="play(3, 0)">I</button>
-            <button onclick="play(3, 1)">II</button>
-            <button onclick="play(3, 2)">III</button>
+            <button onclick="play(3, 0)">I</button><button onclick="play(3, 1)">II</button><button onclick="play(3, 2)">III</button>
         </div>
     </div>
 
     <div id="result-log" style="margin-top:15px; min-height:40px; font-size:0.8rem;"></div>
+    <div id="name-entry" style="display:none; margin-top:10px;">
+        <input type="text" id="player-name" placeholder="名を刻む" maxlength="10" style="background:transparent; border:1px solid var(--gold); color:var(--gold); padding:5px; text-align:center; width:60%;">
+        <button onclick="submitScore()" style="flex:none; padding:5px 15px;">刻印</button>
+    </div>
     <button id="reset-btn" style="display:none; width:100%; margin-top:10px; border-color:var(--gold); color:var(--gold);" onclick="location.reload()">再挑戦</button>
 </div>
 
@@ -148,6 +144,31 @@
     let timerInterval = null;
     let currentEvent = null;
 
+    // オンラインランキングのダミーデータ（サーバー接続時はfetchに置換）
+    let mockOnlineScores = [
+        {name: "Zenith", score: 42}, {name: "Luna", score: 35}, {name: "Sol", score: 28}
+    ];
+
+    window.onload = () => { fetchScores(); };
+
+    function fetchScores() {
+        // 本来はここで API からデータを取得
+        const list = document.getElementById('online-rank-list');
+        list.innerHTML = mockOnlineScores.map((s, i) => 
+            `<div class="rank-row"><span>No.${i+1} ${s.name}</span><span>${s.score} Steps</span></div>`
+        ).join('');
+    }
+
+    function submitScore() {
+        const name = document.getElementById('player-name').value || "Unnamed";
+        // 本来はここで API に POST 送信
+        mockOnlineScores.push({name: name, score: streak});
+        mockOnlineScores.sort((a,b) => b.score - a.score);
+        document.getElementById('name-entry').style.display = 'none';
+        document.getElementById('reset-btn').style.display = 'block';
+        alert("聖遺録に名を刻みました。");
+    }
+
     function startGame() {
         document.getElementById('intro-overlay').style.display = 'none';
         document.getElementById('game-container').style.display = 'block';
@@ -155,76 +176,45 @@
 
     function setupMode(mode) {
         document.getElementById('branch-ui').style.display = 'none';
-        if (mode === 'gamble') {
-            document.getElementById('triple-ui').style.display = 'block';
-            document.getElementById('msg-text').innerText = "三位一体の試練：成功すれば二歩進む";
-        } else {
-            document.getElementById('standard-ui').style.display = 'block';
-            document.getElementById('msg-text').innerText = "堅実なる道";
-        }
+        if (mode === 'gamble') { document.getElementById('triple-ui').style.display = 'block'; } 
+        else { document.getElementById('standard-ui').style.display = 'block'; }
     }
 
     function play(chance, choiceIndex) {
         clearInterval(timerInterval);
         document.getElementById('timer-container').style.display = 'none';
-        
         let winningNumbers = [Math.floor(Math.random() * chance)];
         if (currentEvent === 'double_moon' && chance === 2) winningNumbers = [0, 1];
 
         const isWin = winningNumbers.includes(choiceIndex);
-        const resultLog = document.getElementById('result-log');
-        
         document.getElementById('standard-ui').style.display = 'none';
         document.getElementById('triple-ui').style.display = 'none';
         document.getElementById('quad-ui').style.display = 'none';
         resetEffects();
 
         if (isWin) {
-            let gain = 1;
-            if (chance === 3) gain = 2;
-            if (chance === 4) gain = 3;
-            
+            let gain = (chance === 3) ? 2 : (chance === 4 ? 3 : 1);
             streak += gain;
             document.getElementById('streak').innerText = streak;
-            
-            if (streak > 0 && streak % 5 === 0) {
-                isGuiding = true;
-                resultLog.innerHTML = "<span style='color:var(--safety)'>「導きの光」が次の扉を照らします。</span>";
-            } else {
-                resultLog.innerHTML = "運命は継続を認めました。";
-            }
-
-            // イベント抽選（約25%）
-            if (Math.random() < 0.25) {
-                triggerRandomEvent();
-            } else if (streak > 0 && streak % 3 === 0) {
-                document.getElementById('branch-ui').style.display = 'block';
-            } else {
-                showNormalUI();
-            }
+            if (streak % 5 === 0) isGuiding = true;
+            if (Math.random() < 0.25) { triggerRandomEvent(); } 
+            else if (streak % 3 === 0) { document.getElementById('branch-ui').style.display = 'block'; } 
+            else { showNormalUI(); }
         } else {
-            if (lives > 0) {
-                lives--;
-                updateLifeDisplay();
-                resultLog.innerHTML = "<span style='color:var(--gold)'>守護の輝石が砕け、命を繋ぎ止めた...</span>";
-                showNormalUI();
-            } else {
-                gameOver();
-            }
+            if (lives > 0) { lives--; updateLifeDisplay(); showNormalUI(); } 
+            else { gameOver(); }
         }
-        updateRank();
-        currentEvent = null;
+        updateRank(); currentEvent = null;
     }
 
     function triggerRandomEvent() {
         const events = [
-            { name: "流星の祝福", action: () => { lives++; updateLifeDisplay(); document.getElementById('msg-text').innerText = "流星が輝石を修復した"; showNormalUI(); }},
-            { name: "双子の月", action: () => { currentEvent = 'double_moon'; document.getElementById('msg-text').innerText = "双子の月が昇る：全ての扉が正解となる"; showNormalUI(); }},
-            { name: "等価交換", action: () => { document.getElementById('msg-text').innerText = "等価交換：1/4に挑み、三歩進むか？"; document.getElementById('quad-ui').style.display = 'block'; }},
-            { name: "刻限の砂時計", action: () => { startTimer(5); document.getElementById('msg-text').innerText = "猶予は5秒。"; showNormalUI(); }}
+            { name: "流星", action: () => { lives++; updateLifeDisplay(); showNormalUI(); }},
+            { name: "双月", action: () => { currentEvent = 'double_moon'; showNormalUI(); }},
+            { name: "等価", action: () => { document.getElementById('quad-ui').style.display = 'block'; }},
+            { name: "砂時計", action: () => { startTimer(5); showNormalUI(); }}
         ];
-        const ev = events[Math.floor(Math.random() * events.length)];
-        ev.action();
+        events[Math.floor(Math.random() * events.length)].action();
     }
 
     function startTimer(sec) {
@@ -232,34 +222,23 @@
         document.getElementById('timer-container').style.display = 'block';
         let timeLeft = sec;
         timerInterval = setInterval(() => {
-            timeLeft -= 0.1;
-            bar.style.width = (timeLeft / sec * 100) + "%";
-            if (timeLeft <= 0) { clearInterval(timerInterval); gameOver("刻限が過ぎました。"); }
+            timeLeft -= 0.1; bar.style.width = (timeLeft / sec * 100) + "%";
+            if (timeLeft <= 0) { gameOver("刻限が過ぎました。"); }
         }, 100);
     }
 
-    function resetEffects() {
-        document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('hint'));
-    }
+    function resetEffects() { document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('hint')); }
 
     function showNormalUI() {
         document.getElementById('standard-ui').style.display = 'block';
         if (isGuiding) {
-            const hintIdx = Math.floor(Math.random() * 2);
-            document.getElementById(`btn-${hintIdx}`).classList.add('hint');
-            document.getElementById('msg-text').innerText = "導きの光が扉を照らしている...";
+            document.getElementById(`btn-${Math.floor(Math.random()*2)}`).classList.add('hint');
             isGuiding = false;
-        } else if (!document.getElementById('msg-text').innerText.includes('秒') && !document.getElementById('msg-text').innerText.includes('月')) {
-            document.getElementById('msg-text').innerText = "運命を選択してください";
         }
     }
 
-    function updateLifeDisplay() {
-        document.getElementById('life').innerText = `✦ 守護の輝石: ${lives} ✦`;
-        document.getElementById('life').style.color = lives > 0 ? "var(--safety)" : "#666";
-    }
-
-    function updateRank() {
+    function updateLifeDisplay() { document.getElementById('life').innerText = `✦ 守護の輝石: ${lives} ✦`; }
+    function updateRank() { 
         const r = document.getElementById('rank');
         if (streak >= 10) r.innerText = "OBSERVER";
         if (streak >= 20) r.innerText = "ORACLE";
@@ -269,7 +248,7 @@
         clearInterval(timerInterval);
         document.getElementById('msg-text').innerText = reason;
         document.getElementById('result-log').innerHTML = `最終スコア: ${streak}`;
-        document.getElementById('reset-btn').style.display = 'block';
+        document.getElementById('name-entry').style.display = 'block';
         document.getElementById('standard-ui').style.display = 'none';
         document.getElementById('triple-ui').style.display = 'none';
         document.getElementById('quad-ui').style.display = 'none';
