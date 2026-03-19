@@ -43,12 +43,12 @@
 
         .content-box h2 { color: var(--gold); letter-spacing: 0.4rem; margin-bottom: 1rem; }
         
-        /* オンラインランキング表示エリア */
+        /* 実際の記録のみを表示するランキングエリア */
         .online-ranking {
             margin: 1rem 0; padding: 0.5rem; border-top: 1px solid rgba(212, 175, 55, 0.3);
-            max-height: 150px; overflow-y: auto; font-size: 0.8rem; text-align: left;
+            max-height: 180px; overflow-y: auto; font-size: 0.8rem; text-align: left;
         }
-        .rank-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .rank-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
         .container {
             background: rgba(15, 23, 42, 0.8);
@@ -85,9 +85,9 @@
     <div class="content-box">
         <h2>ORACULUM</h2>
         <div id="online-rank-list" class="online-ranking">
-            <div style="text-align:center; opacity:0.5;">神託を受信中...</div>
+            <div style="text-align:center; opacity:0.5; padding: 20px;">記録を読み込み中...</div>
         </div>
-        <p style="font-size:0.7rem; opacity:0.6; margin-bottom:1rem;">世界の神託者たちの最高記録</p>
+        <p style="font-size:0.7rem; opacity:0.6; margin-bottom:1rem;">― 過去の聖遺録 ―</p>
         <button style="width:100%; border-color:var(--gold); color:var(--gold);" onclick="startGame()">儀式を始める</button>
     </div>
 </div>
@@ -130,10 +130,12 @@
     </div>
 
     <div id="result-log" style="margin-top:15px; min-height:40px; font-size:0.8rem;"></div>
+    
     <div id="name-entry" style="display:none; margin-top:10px;">
-        <input type="text" id="player-name" placeholder="名を刻む" maxlength="10" style="background:transparent; border:1px solid var(--gold); color:var(--gold); padding:5px; text-align:center; width:60%;">
-        <button onclick="submitScore()" style="flex:none; padding:5px 15px;">刻印</button>
+        <input type="text" id="player-name" placeholder="名を刻む" maxlength="10" style="background:transparent; border:1px solid var(--gold); color:var(--gold); padding:8px; text-align:center; width:60%;">
+        <button onclick="submitScore()" style="flex:none; padding:8px 15px; border-color:var(--gold);">刻印</button>
     </div>
+    
     <button id="reset-btn" style="display:none; width:100%; margin-top:10px; border-color:var(--gold); color:var(--gold);" onclick="location.reload()">再挑戦</button>
 </div>
 
@@ -143,30 +145,43 @@
     let isGuiding = false;
     let timerInterval = null;
     let currentEvent = null;
+    const STORAGE_KEY = 'oraculum_actual_records';
 
-    // オンラインランキングのダミーデータ（サーバー接続時はfetchに置換）
-    let mockOnlineScores = [
-        {name: "Zenith", score: 42}, {name: "Luna", score: 35}, {name: "Sol", score: 28}
-    ];
+    window.onload = () => { refreshRanking(); };
 
-    window.onload = () => { fetchScores(); };
-
-    function fetchScores() {
-        // 本来はここで API からデータを取得
+    // ブラウザに保存された実際のプレイ記録のみを読み込む
+    function refreshRanking() {
         const list = document.getElementById('online-rank-list');
-        list.innerHTML = mockOnlineScores.map((s, i) => 
+        const scores = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        
+        if (scores.length === 0) {
+            list.innerHTML = `<div style="text-align:center; opacity:0.3; padding:20px;">まだ聖遺録に刻まれた名はありません。</div>`;
+            return;
+        }
+
+        list.innerHTML = scores.map((s, i) => 
             `<div class="rank-row"><span>No.${i+1} ${s.name}</span><span>${s.score} Steps</span></div>`
         ).join('');
     }
 
+    // スコアを保存する
     function submitScore() {
-        const name = document.getElementById('player-name').value || "Unnamed";
-        // 本来はここで API に POST 送信
-        mockOnlineScores.push({name: name, score: streak});
-        mockOnlineScores.sort((a,b) => b.score - a.score);
+        const nameInput = document.getElementById('player-name');
+        const name = nameInput.value.trim() || "名無き預言者";
+        
+        let scores = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        scores.push({name: name, score: streak, date: new Date().getTime()});
+        
+        // スコア順にソートして上位10件を保持
+        scores.sort((a,b) => b.score - a.score);
+        scores = scores.slice(0, 10);
+        
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
+        
         document.getElementById('name-entry').style.display = 'none';
         document.getElementById('reset-btn').style.display = 'block';
-        alert("聖遺録に名を刻みました。");
+        document.getElementById('result-log').innerHTML += `<br><span style="color:var(--gold)">聖遺録に名が刻まれました。</span>`;
+        refreshRanking();
     }
 
     function startGame() {
