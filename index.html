@@ -43,7 +43,6 @@
 
         .content-box h2 { color: var(--gold); letter-spacing: 0.4rem; margin-bottom: 1rem; }
         
-        /* 実際の記録のみを表示するランキングエリア */
         .online-ranking {
             margin: 1rem 0; padding: 0.5rem; border-top: 1px solid rgba(212, 175, 55, 0.3);
             max-height: 180px; overflow-y: auto; font-size: 0.8rem; text-align: left;
@@ -59,7 +58,19 @@
 
         .life-area { color: var(--safety); font-size: 0.8rem; margin-bottom: 10px; letter-spacing: 0.2rem; }
         .rank-badge { font-size: 0.7rem; letter-spacing: 0.3rem; color: var(--gold); border: 1px solid var(--gold); padding: 5px 15px; display: inline-block; margin-bottom: 1rem; }
-        .current-streak { font-size: 5rem; font-weight: 100; margin: 0; }
+        
+        /* 星々の記憶（履歴表示） */
+        .history-orbit {
+            position: relative; width: 150px; height: 150px; margin: 0 auto;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .current-streak { font-size: 5rem; font-weight: 100; margin: 0; z-index: 2; }
+        .history-star {
+            position: absolute; width: 6px; height: 6px; background: var(--gold);
+            border-radius: 50%; box-shadow: 0 0 10px var(--gold);
+            transition: all 1s ease; opacity: 0.6;
+        }
+
         .message-area { height: 60px; color: var(--accent); font-style: italic; margin: 15px 0; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; flex-direction: column; }
 
         .timer-bar-container { width: 100%; height: 2px; background: rgba(255,255,255,0.1); margin-top: 5px; display: none; }
@@ -95,7 +106,12 @@
 <div class="container" id="game-container">
     <div id="life" class="life-area">✦ 守護の輝石: 1 ✦</div>
     <div id="rank" class="rank-badge">PILGRIM</div>
-    <div id="streak" class="current-streak">0</div>
+    
+    <div class="history-orbit">
+        <div id="streak" class="current-streak">0</div>
+        <div id="star-container"></div>
+    </div>
+
     <div id="message" class="message-area">
         <span id="msg-text">運命を選択してください</span>
         <div id="timer-container" class="timer-bar-container"><div id="timer-bar"></div></div>
@@ -145,42 +161,29 @@
     let isGuiding = false;
     let timerInterval = null;
     let currentEvent = null;
+    let history = []; // 正解の履歴を保存
     const STORAGE_KEY = 'oraculum_actual_records';
 
     window.onload = () => { refreshRanking(); };
 
-    // ブラウザに保存された実際のプレイ記録のみを読み込む
     function refreshRanking() {
         const list = document.getElementById('online-rank-list');
         const scores = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        
         if (scores.length === 0) {
             list.innerHTML = `<div style="text-align:center; opacity:0.3; padding:20px;">まだ聖遺録に刻まれた名はありません。</div>`;
             return;
         }
-
-        list.innerHTML = scores.map((s, i) => 
-            `<div class="rank-row"><span>No.${i+1} ${s.name}</span><span>${s.score} Steps</span></div>`
-        ).join('');
+        list.innerHTML = scores.map((s, i) => `<div class="rank-row"><span>No.${i+1} ${s.name}</span><span>${s.score} Steps</span></div>`).join('');
     }
 
-    // スコアを保存する
     function submitScore() {
-        const nameInput = document.getElementById('player-name');
-        const name = nameInput.value.trim() || "名無き預言者";
-        
+        const name = document.getElementById('player-name').value.trim() || "名無き預言者";
         let scores = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         scores.push({name: name, score: streak, date: new Date().getTime()});
-        
-        // スコア順にソートして上位10件を保持
         scores.sort((a,b) => b.score - a.score);
-        scores = scores.slice(0, 10);
-        
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
-        
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(scores.slice(0, 10)));
         document.getElementById('name-entry').style.display = 'none';
         document.getElementById('reset-btn').style.display = 'block';
-        document.getElementById('result-log').innerHTML += `<br><span style="color:var(--gold)">聖遺録に名が刻まれました。</span>`;
         refreshRanking();
     }
 
@@ -198,16 +201,38 @@
     function play(chance, choiceIndex) {
         clearInterval(timerInterval);
         document.getElementById('timer-container').style.display = 'none';
-        let winningNumbers = [Math.floor(Math.random() * chance)];
-        if (currentEvent === 'double_moon' && chance === 2) winningNumbers = [0, 1];
+        
+        // --- 案3：パターン認識アルゴリズム ---
+        // 完全ランダムではなく、直前の結果に基づいたわずかな偏りを生成
+        let winningNumbers;
+        if (currentEvent === 'double_moon' && chance === 2) {
+            winningNumbers = [0, 1];
+        } else {
+            let bias = Math.random();
+            if (history.length > 0 && bias < 0.2) { 
+                // 20%の確率で前回と同じ結果にする（連続パターン）
+                winningNumbers = [history[history.length - 1] % chance];
+            } else if (history.length > 0 && bias < 0.4) {
+                // 20%の確率で前回と逆の結果にする（交互パターン）
+                winningNumbers = [(history[history.length - 1] + 1) % chance];
+            } else {
+                // 残りは完全ランダム
+                winningNumbers = [Math.floor(Math.random() * chance)];
+            }
+        }
 
         const isWin = winningNumbers.includes(choiceIndex);
+        const correctValue = winningNumbers[0]; // 履歴保存用
+
         document.getElementById('standard-ui').style.display = 'none';
         document.getElementById('triple-ui').style.display = 'none';
         document.getElementById('quad-ui').style.display = 'none';
         resetEffects();
 
         if (isWin) {
+            history.push(correctValue);
+            updateHistoryStars(); // 履歴の星を更新
+            
             let gain = (chance === 3) ? 2 : (chance === 4 ? 3 : 1);
             streak += gain;
             document.getElementById('streak').innerText = streak;
@@ -220,6 +245,27 @@
             else { gameOver(); }
         }
         updateRank(); currentEvent = null;
+    }
+
+    // 履歴を可視化する「星々の記憶」
+    function updateHistoryStars() {
+        const container = document.getElementById('star-container');
+        container.innerHTML = '';
+        const maxVisible = 3;
+        const recent = history.slice(-maxVisible);
+        
+        recent.forEach((pos, i) => {
+            const star = document.createElement('div');
+            star.className = 'history-star';
+            // 位置によって配置（左ならマイナス、右ならプラス）
+            const angle = (i / maxVisible) * Math.PI * 2;
+            const x = Math.cos(angle) * 70;
+            const y = Math.sin(angle) * 70;
+            // 正解が左(0)なら青っぽく、右(1)なら金っぽくするなど視覚的ヒント
+            star.style.backgroundColor = pos === 0 ? '#60a5fa' : '#d4af37';
+            star.style.transform = `translate(${x}px, ${y}px)`;
+            container.appendChild(star);
+        });
     }
 
     function triggerRandomEvent() {
