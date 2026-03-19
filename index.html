@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oraculum - 運命の審判</title>
+    <title>Oraculum - 聖者の賭け</title>
     <style>
         :root {
             --deep-blue: #020617;
@@ -15,99 +15,71 @@
         body {
             font-family: 'Times New Roman', serif;
             background: var(--deep-blue);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            color: var(--silver);
-            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; color: var(--silver); overflow: hidden;
         }
 
         #stars {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
-            opacity: 0.3;
-        }
-
-        /* オーバーレイ共通 */
-        .overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(2, 6, 23, 0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            transition: opacity 0.8s ease;
-        }
-
-        .content-box {
-            max-width: 500px;
-            width: 85%;
-            padding: 2.5rem;
-            border: 1px solid var(--gold);
-            text-align: center;
-            background: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 0 50px rgba(212, 175, 55, 0.1);
-        }
-
-        h2 { color: var(--gold); letter-spacing: 0.5rem; margin-bottom: 1.2rem; font-size: 1.5rem; }
-        p { line-height: 1.6; font-size: 0.9rem; margin-bottom: 1rem; color: var(--silver); }
-        
-        .ranking-list {
-            margin: 1.5rem 0;
-            padding: 0;
-            list-style: none;
-            border-top: 1px solid rgba(212, 175, 55, 0.3);
-            text-align: left;
-        }
-
-        .ranking-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 5px;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
-            font-size: 0.85rem;
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            opacity: 0.5;
         }
 
         .container {
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(15px);
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
             padding: 3rem;
             border: 1px solid rgba(212, 175, 55, 0.3);
             text-align: center;
             width: 90%;
             max-width: 500px;
-            display: none;
+            position: relative;
         }
 
-        .rank-badge { font-size: 0.7rem; letter-spacing: 0.3rem; color: var(--gold); border: 1px solid var(--gold); padding: 5px 15px; display: inline-block; margin-bottom: 1rem; }
-        .current-streak { font-size: 6rem; font-weight: 100; margin: 0; line-height: 1; }
-        .event-banner { height: 60px; color: var(--accent); font-style: italic; margin: 15px 0; font-size: 0.9rem; }
+        /* 導入画面 */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 6, 23, 0.98);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100;
+        }
 
-        .btn-group { display: flex; gap: 20px; margin: 20px 0; }
+        .content-box {
+            max-width: 450px; width: 85%; padding: 2rem;
+            border: 1px solid var(--gold); text-align: center;
+        }
+
+        .rank-badge {
+            font-size: 0.7rem; letter-spacing: 0.3rem; color: var(--gold);
+            border: 1px solid var(--gold); padding: 5px 15px;
+            display: inline-block; margin-bottom: 1rem;
+        }
+
+        .current-streak { font-size: 6rem; font-weight: 100; margin: 0; line-height: 1; }
+        
+        .message-area { height: 60px; color: var(--accent); font-style: italic; margin: 20px 0; font-size: 0.9rem; }
+
+        .btn-group { display: flex; gap: 15px; margin: 20px 0; justify-content: center; flex-wrap: wrap; }
         
         button {
-            background: transparent;
-            color: var(--silver);
-            border: 1px solid var(--silver);
-            padding: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-            letter-spacing: 0.2rem;
-            font-family: inherit;
+            background: transparent; color: var(--silver); border: 1px solid var(--silver);
+            padding: 15px 25px; cursor: pointer; transition: all 0.3s;
+            letter-spacing: 0.1rem; font-family: inherit; flex: 1; min-width: 120px;
         }
         button:hover { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
 
-        .choice-ui { display: none; padding: 20px; border: 1px double var(--gold); margin-top: 20px; }
-        .reset-btn { display: none; width: 100%; margin-top: 20px; }
+        .choice-panel {
+            display: none; border: 1px double var(--gold);
+            padding: 20px; margin-top: 20px; animation: fadeIn 0.5s;
+        }
 
-        @keyframes shake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-4px,2px); } 75% { transform: translate(4px,-2px); } }
-        .shake { animation: shake 0.1s infinite; }
+        .ranking-box {
+            margin-top: 20px; border-top: 1px solid rgba(212,175,55,0.2);
+            padding-top: 15px; font-size: 0.8rem; text-align: left;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -116,162 +88,131 @@
 
 <div id="intro-overlay" class="overlay">
     <div class="content-box">
-        <h2>THE ORACULUM</h2>
-        <p>ここは運命の神殿。あなたの歩みは「二分の一」の選択のみで決まります。</p>
-        
-        <div style="font-size: 0.8rem; color: var(--gold); margin-top: 20px;">― 過去の聖遺録 ―</div>
-        <div id="intro-ranking" class="ranking-list">
-            </div>
-
-        <button style="width: 100%; border-color: var(--gold); margin-top: 1rem;" onclick="startGame()">儀式を始める</button>
+        <h2 style="color:var(--gold); letter-spacing:0.5rem;">ORACULUM</h2>
+        <p style="font-size:0.85rem; line-height:1.8;">
+            三連勝の節目に「聖者の賭け」が解禁されます。<br>
+            三分の一の試練を乗り越えし者には、<br>二歩分の前進が約束されるでしょう。
+        </p>
+        <button style="width:100%; border-color:var(--gold);" onclick="closeIntro()">儀式を始める</button>
     </div>
 </div>
 
-<div class="container" id="main-container">
-    <div id="rank" class="rank-badge">NOVICE</div>
+<div class="container" id="main-ui" style="display:none;">
+    <div id="rank" class="rank-badge">PILGRIM</div>
     <div id="streak" class="current-streak">0</div>
-    <div id="event-text" class="event-banner"></div>
+    <div id="message" class="message-area"></div>
 
-    <div id="game-ui">
+    <div id="standard-ui">
         <div class="btn-group">
-            <button onclick="handleInput(0)">SINISTER</button>
-            <button onclick="handleInput(1)">DEXTER</button>
+            <button onclick="play(2)">SINISTER</button>
+            <button onclick="play(2)">DEXTER</button>
         </div>
     </div>
 
-    <div id="gamble-ui" class="choice-ui">
-        <p style="font-size: 0.8rem;">記録を刻み、ここを去りますか？</p>
+    <div id="branch-ui" class="choice-panel">
+        <p style="font-size:0.8rem; margin-bottom:15px;">運命の分岐点：挑戦を選びますか？</p>
         <div class="btn-group">
-            <button onclick="collectScore()">安息（確定）</button>
-            <button style="border-color:var(--accent)" onclick="continueGamble()">渇望（続行）</button>
+            <button onclick="setupMode('normal')">通常の道 (1/2)</button>
+            <button style="border-color:var(--accent); color:var(--accent);" onclick="setupMode('gamble')">聖者の賭け (1/3)</button>
         </div>
     </div>
 
-    <div id="result-ui" style="margin: 20px 0; min-height: 80px;">
+    <div id="triple-ui" class="choice-panel">
+        <div class="btn-group">
+            <button onclick="play(3)">TRIAD I</button>
+            <button onclick="play(3)">TRIAD II</button>
+            <button onclick="play(3)">TRIAD III</button>
         </div>
-    <button id="reset-btn" class="reset-btn" onclick="resetGame()">再誕</button>
+    </div>
+
+    <div id="result-log" style="margin-top:20px; min-height:50px;"></div>
+    <button id="reset-btn" style="display:none; width:100%; margin-top:20px;" onclick="location.reload()">再誕</button>
+    
+    <div id="ranking" class="ranking-box"></div>
 </div>
 
 <script>
     let streak = 0;
-    let isGolden = false;
-    let isReversed = false;
-    const STORAGE_KEY = 'oraculum_final_v5';
+    const STORAGE_KEY = 'oraculum_saint_rank';
 
-    window.onload = () => {
-        updateRankingDisplay('intro-ranking');
-    };
-
-    function startGame() {
-        const intro = document.getElementById('intro-overlay');
-        const main = document.getElementById('main-container');
-        intro.style.opacity = '0';
-        setTimeout(() => {
-            intro.style.display = 'none';
-            main.style.display = 'block';
-        }, 800);
+    function closeIntro() {
+        document.getElementById('intro-overlay').style.display = 'none';
+        document.getElementById('main-ui').style.display = 'block';
+        showRanking();
     }
 
-    function handleInput(choice) {
-        const actual = isReversed ? 1 - choice : choice;
-        const winRate = isGolden ? 0.8 : 0.5;
+    function setupMode(mode) {
+        document.getElementById('branch-ui').style.display = 'none';
+        if (mode === 'gamble') {
+            document.getElementById('triple-ui').style.display = 'block';
+            document.getElementById('message').innerText = "三位一体の試練：的中すれば二歩進む";
+        } else {
+            document.getElementById('standard-ui').style.display = 'block';
+            document.getElementById('message').innerText = "堅実なる歩み";
+        }
+    }
+
+    function play(chance) {
+        const isWin = Math.random() < (1 / chance);
+        const resultLog = document.getElementById('result-log');
         
-        if (Math.random() < winRate) {
-            streak++;
-            updateUI();
-            if (streak % 5 === 0) showGamble();
-            else if (streak % 3 === 0) triggerEvent();
-            else clearEvent();
+        // UIを一旦隠す
+        document.getElementById('standard-ui').style.display = 'none';
+        document.getElementById('triple-ui').style.display = 'none';
+        document.getElementById('message').innerText = "";
+
+        if (isWin) {
+            // 1/3なら+2、それ以外(1/2)なら+1
+            const gain = (chance === 3) ? 2 : 1;
+            streak += gain;
+            document.getElementById('streak').innerText = streak;
+            updateRank();
+
+            // 3連勝(またはそれ以上)のチェック
+            if (streak > 0 && streak % 3 === 0) {
+                document.getElementById('branch-ui').style.display = 'block';
+                resultLog.innerHTML = `<span style="color:var(--gold)">奇跡の連鎖。さらなる賭けに挑みますか？</span>`;
+            } else {
+                document.getElementById('standard-ui').style.display = 'block';
+                resultLog.innerHTML = "運命は継続を認めました。";
+            }
         } else {
             gameOver();
         }
     }
 
-    function updateUI() {
-        document.getElementById('streak').innerText = streak;
-        const rank = document.getElementById('rank');
-        const bg = document.getElementById('stars');
-        
-        if (streak < 5) { rank.innerText = "PILGRIM"; bg.style.opacity = "0.3"; }
-        else if (streak < 15) { rank.innerText = "OBSERVER"; bg.style.opacity = "0.7"; }
-        else { rank.innerText = "ORACLE"; bg.style.opacity = "1"; }
+    function updateRank() {
+        const r = document.getElementById('rank');
+        if (streak >= 7) r.innerText = "OBSERVER";
+        if (streak >= 15) r.innerText = "TRANSCENDER";
+        if (streak >= 30) r.innerText = "ORACLE";
     }
 
-    function triggerEvent() {
-        clearEvent();
-        const evs = [
-            { t: "黄金の刻", d: "成功率が一時的に向上する", f: () => { isGolden = true; }},
-            { t: "混沌の渦", d: "左右の理が逆転する", f: () => { isReversed = true; document.getElementById('main-container').classList.add('shake'); }},
-            { t: "忘却の霧", d: "扉の文字が読めなくなる", f: () => { document.querySelectorAll('.btn-group button').forEach(b => b.style.color = 'transparent'); }}
-        ];
-        const e = evs[Math.floor(Math.random() * evs.length)];
-        document.getElementById('event-text').innerHTML = `― ${e.t} ―<br><small>${e.d}</small>`;
-        e.f();
-    }
-
-    function clearEvent() {
-        isGolden = false; isReversed = false;
-        document.getElementById('event-text').innerHTML = "";
-        document.getElementById('main-container').classList.remove('shake');
-        document.querySelectorAll('.btn-group button').forEach(b => b.style.color = '');
-    }
-
-    function showGamble() {
-        document.getElementById('game-ui').style.display = 'none';
-        document.getElementById('gamble-ui').style.display = 'block';
-    }
-
-    function collectScore() { gameOver("記録を運命に刻みました。"); }
-    function continueGamble() {
-        document.getElementById('game-ui').style.display = 'block';
-        document.getElementById('gamble-ui').style.display = 'none';
-        clearEvent();
-    }
-
-    function gameOver(msg = "審判が下りました。") {
-        saveScore(streak);
-        clearEvent();
-        document.getElementById('game-ui').style.display = 'none';
-        document.getElementById('gamble-ui').style.display = 'none';
+    function gameOver() {
+        const prob = (Math.pow(0.5, streak) * 100).toFixed(6);
+        document.getElementById('result-log').innerHTML = 
+            `<span style="color:var(--gold)">審判が下りました。</span><br>到達確率: ${prob}%`;
         document.getElementById('reset-btn').style.display = 'block';
-        
-        const prob = (Math.pow(0.5, streak)*100).toFixed(6);
-        let resultHTML = `<span style="color:var(--gold);">${msg}</span><br>到達確率: ${prob}%<br>`;
-        resultHTML += `<div class="ranking-list" id="end-ranking" style="margin-top:10px;"></div>`;
-        
-        document.getElementById('result-ui').innerHTML = resultHTML;
-        updateRankingDisplay('end-ranking');
+        saveScore(streak);
+        showRanking();
     }
 
     function saveScore(s) {
         if (s === 0) return;
-        let r = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        r.push({score: s, date: new Date().toLocaleDateString()});
-        r.sort((a,b) => b.score - a.score);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(r.slice(0, 5)));
+        let data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        data.push({score: s, date: new Date().toLocaleDateString()});
+        data.sort((a,b) => b.score - a.score);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.slice(0, 5)));
     }
 
-    function updateRankingDisplay(targetId) {
-        const list = document.getElementById(targetId);
+    function showRanking() {
         const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        if (data.length === 0) {
-            list.innerHTML = "<p style='text-align:center; opacity:0.5;'>記録なし</p>";
-            return;
-        }
-        list.innerHTML = data.map((item, i) => `
-            <div class="ranking-item">
-                <span>Rank ${i+1}</span>
-                <span style="color:var(--gold)">${item.score} Steps</span>
-                <span style="font-size:0.7rem; opacity:0.6;">${item.date}</span>
-            </div>
-        `).join('');
-    }
-
-    function resetGame() {
-        streak = 0; updateUI(); clearEvent();
-        document.getElementById('game-ui').style.display = 'block';
-        document.getElementById('reset-btn').style.display = 'none';
-        document.getElementById('result-ui').innerHTML = "";
+        const box = document.getElementById('ranking');
+        if (data.length === 0) return;
+        box.innerHTML = "<div style='text-align:center; margin-bottom:10px; opacity:0.6'>聖遺録</div>" + 
+            data.map((d, i) => `<div style="display:flex; justify-content:space-between; padding:2px 0;">
+                <span>Rank ${i+1}</span><span>${d.score} Steps</span>
+            </div>`).join('');
     }
 </script>
 </body>
