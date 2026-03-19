@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>50/50 サバイバル</title>
+    <title>50/50 サバイバル - Ranking Edition</title>
     <style>
         :root {
-            --bg-color: #f0f2f5;
-            --card-color: #ffffff;
-            --primary-color: #4a90e2;
-            --accent-color: #e74c3c;
+            --bg-color: #1a1a2e;
+            --card-color: #16213e;
+            --primary-color: #0f3460;
+            --accent-color: #e94560;
+            --text-color: #ffffff;
         }
 
         body {
@@ -18,113 +19,156 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            color: #333;
+            color: var(--text-color);
         }
 
         .container {
             background: var(--card-color);
             padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             text-align: center;
             width: 90%;
-            max-width: 400px;
+            max-width: 450px;
         }
 
-        h1 { margin-bottom: 0.5rem; }
-        .score-board { font-size: 1.2rem; margin-bottom: 1.5rem; color: #666; }
-        .current-streak { font-size: 3rem; font-weight: bold; color: var(--primary-color); margin: 1rem 0; }
+        .score-board { font-size: 1rem; color: #95a5a6; margin-top: 10px; }
+        .current-streak { font-size: 4rem; font-weight: bold; color: #00d2ff; text-shadow: 0 0 10px rgba(0,210,255,0.5); margin: 0.5rem 0; }
 
-        .btn-group { display: flex; gap: 10px; justify-content: center; }
-
+        .btn-group { display: flex; gap: 15px; margin: 20px 0; }
         button {
-            padding: 15px 30px;
-            font-size: 1.1rem;
+            padding: 15px;
+            font-size: 1rem;
             cursor: pointer;
             border: none;
-            border-radius: 8px;
-            transition: transform 0.1s, background 0.2s;
+            border-radius: 10px;
+            transition: all 0.2s;
             font-weight: bold;
         }
 
-        .choice-btn { background: var(--primary-color); color: white; flex: 1; }
-        .choice-btn:hover { background: #357abd; }
+        .choice-btn { background: #0f3460; color: white; flex: 1; border: 1px solid #00d2ff; }
+        .choice-btn:hover { background: #16213e; box-shadow: 0 0 15px #00d2ff; }
         .choice-btn:active { transform: scale(0.95); }
 
-        .reset-btn { background: var(--accent-color); color: white; display: none; width: 100%; }
+        .reset-btn { background: var(--accent-color); color: white; display: none; width: 100%; margin-top: 10px; }
 
-        .result-msg { margin-top: 1.5rem; line-height: 1.6; min-height: 4em; }
-        .probability { font-weight: bold; color: #d35400; }
-        
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* ランキングセクション */
+        .ranking-box {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #30475e;
+            text-align: left;
+        }
+        .ranking-title { font-size: 0.9rem; color: #f1c40f; margin-bottom: 10px; text-align: center; }
+        .ranking-list { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
+        .ranking-item { display: flex; justify-content: space-between; padding: 4px 10px; border-radius: 4px; margin-bottom: 2px; }
+        .ranking-item:nth-child(1) { background: rgba(241, 196, 15, 0.2); color: #f1c40f; font-weight: bold; }
+
+        .result-msg { min-height: 80px; margin: 15px 0; line-height: 1.5; }
+        .highlight { color: #e94560; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>50/50 Survival</h1>
-    <div class="score-board">連続成功回数</div>
+    <h2 style="margin:0">50/50 SURVIVAL</h2>
+    <div class="score-board">CURRENT STREAK</div>
     <div id="streak" class="current-streak">0</div>
 
     <div id="game-ui">
-        <p>どちらかのドアを選べ！</p>
         <div class="btn-group">
-            <button class="choice-btn" onclick="play(0)">左のドア</button>
-            <button class="choice-btn" onclick="play(1)">右のドア</button>
+            <button class="choice-btn" onclick="play(0)">LEFT</button>
+            <button class="choice-btn" onclick="play(1)">RIGHT</button>
         </div>
     </div>
 
     <div id="result-ui" class="result-msg"></div>
-    <button id="reset-btn" class="reset-btn" onclick="resetGame()">もう一度挑戦する</button>
+    <button id="reset-btn" class="reset-btn" onclick="resetGame()">RETRY</button>
+
+    <div class="ranking-box">
+        <div class="ranking-title">🏆 LOCAL RANKING (TOP 5)</div>
+        <div id="ranking-list" class="ranking-list">
+            </div>
+    </div>
 </div>
 
 <script>
     let streak = 0;
+    const STORAGE_KEY = 'survival_game_rankings';
+
+    // 起動時にランキングを表示
+    window.onload = updateRankingDisplay;
 
     function play(choice) {
         const winningDoor = Math.floor(Math.random() * 2);
-        const streakDisplay = document.getElementById('streak');
         const resultUI = document.getElementById('result-ui');
-        const gameUI = document.getElementById('game-ui');
-        const resetBtn = document.getElementById('reset-btn');
 
         if (choice === winningDoor) {
-            // 正解
             streak++;
-            streakDisplay.innerText = streak;
-            resultUI.innerHTML = `<span style="color: #27ae60;">セーフ！次へ進もう。</span>`;
-            resultUI.classList.add('fade-in');
-            setTimeout(() => resultUI.classList.remove('fade-in'), 500);
+            document.getElementById('streak').innerText = streak;
+            resultUI.innerHTML = `<span style="color: #00ff88;">SAFE... Keep going.</span>`;
         } else {
-            // 終了
-            const probability = Math.pow(0.5, streak) * 100;
-            const comparison = getComparison(streak);
-            
-            gameUI.style.display = 'none';
-            resetBtn.style.display = 'block';
-            
-            resultUI.innerHTML = `
-                <div class="fade-in">
-                    <b style="color: var(--accent-color); font-size: 1.2rem;">GAME OVER</b><br>
-                    ここまで到達する確率は <span class="probability">${probability.toFixed(streak > 10 ? 6 : 2)}%</span> でした。<br>
-                    <small>${comparison}</small>
-                </div>
-            `;
+            gameOver();
         }
     }
 
-    function getComparison(n) {
-        if (n === 0) return "まだ何も始めていません。";
-        if (n <= 3) return "よくあることです。";
-        if (n <= 5) return "なかなかの運の持ち主ですね。";
-        if (n <= 7) return "1クラス(32人)に1人の逸材です。";
-        if (n <= 10) return "1000人に1人の強運です！";
-        if (n <= 14) return "万人に1人のレベル。宝くじを買うべき？";
-        if (n <= 20) return "100万人に1人の奇跡。歴史に刻まれます。";
-        return "もはや計算不能な神の領域です。";
+    function gameOver() {
+        const gameUI = document.getElementById('game-ui');
+        const resetBtn = document.getElementById('reset-btn');
+        const resultUI = document.getElementById('result-ui');
+        
+        const prob = (Math.pow(0.5, streak) * 100).toFixed(streak > 10 ? 5 : 2);
+        
+        // ランキング保存
+        const isNewRecord = saveScore(streak);
+
+        gameUI.style.display = 'none';
+        resetBtn.style.display = 'block';
+        
+        resultUI.innerHTML = `
+            <span class="highlight">GAME OVER</span><br>
+            生存確率: ${prob}%<br>
+            ${isNewRecord ? '<span style="color:#f1c40f">★ NEW RECORD! ★</span>' : ''}
+        `;
+        
+        updateRankingDisplay();
+    }
+
+    function saveScore(score) {
+        if (score === 0) return false;
+        
+        let rankings = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        const now = new Date();
+        const dateStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}`;
+        
+        rankings.push({ score: score, date: dateStr });
+        // スコア順にソートして上位5つを保持
+        rankings.sort((a, b) => b.score - a.score);
+        const topRankings = rankings.slice(0, 5);
+        
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(topRankings));
+        
+        // 今回のスコアがトップ5に入っているか確認
+        return topRankings.some(r => r.score === score && r.date === dateStr);
+    }
+
+    function updateRankingDisplay() {
+        const listElement = document.getElementById('ranking-list');
+        const rankings = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        
+        if (rankings.length === 0) {
+            listElement.innerHTML = '<div style="text-align:center; color:#555;">No records yet</div>';
+            return;
+        }
+
+        listElement.innerHTML = rankings.map((r, i) => `
+            <div class="ranking-item">
+                <span>${i + 1}. ${r.score}連勝</span>
+                <span style="font-size: 0.7rem; color: #888;">${r.date}</span>
+            </div>
+        `).join('');
     }
 
     function resetGame() {
