@@ -33,8 +33,8 @@
             opacity: 0.3;
         }
 
-        /* 説明画面（オーバーレイ） */
-        #intro-overlay {
+        /* オーバーレイ共通 */
+        .overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(2, 6, 23, 0.95);
@@ -42,22 +42,37 @@
             justify-content: center;
             align-items: center;
             z-index: 100;
-            transition: opacity 1s ease;
+            transition: opacity 0.8s ease;
         }
 
-        .intro-content {
+        .content-box {
             max-width: 500px;
-            padding: 3rem;
+            width: 85%;
+            padding: 2.5rem;
             border: 1px solid var(--gold);
             text-align: center;
             background: rgba(15, 23, 42, 0.8);
             box-shadow: 0 0 50px rgba(212, 175, 55, 0.1);
         }
 
-        .intro-content h2 { color: var(--gold); letter-spacing: 0.5rem; margin-bottom: 1.5rem; }
-        .intro-content p { line-height: 1.8; font-size: 0.9rem; text-align: left; margin-bottom: 1rem; }
-        .intro-content ul { text-align: left; font-size: 0.85rem; color: var(--gold); list-style: none; padding: 0; }
-        .intro-content li { margin-bottom: 0.5rem; }
+        h2 { color: var(--gold); letter-spacing: 0.5rem; margin-bottom: 1.2rem; font-size: 1.5rem; }
+        p { line-height: 1.6; font-size: 0.9rem; margin-bottom: 1rem; color: var(--silver); }
+        
+        .ranking-list {
+            margin: 1.5rem 0;
+            padding: 0;
+            list-style: none;
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            text-align: left;
+        }
+
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 5px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+            font-size: 0.85rem;
+        }
 
         .container {
             background: rgba(15, 23, 42, 0.7);
@@ -67,8 +82,7 @@
             text-align: center;
             width: 90%;
             max-width: 500px;
-            position: relative;
-            display: none; /* 最初は非表示 */
+            display: none;
         }
 
         .rank-badge { font-size: 0.7rem; letter-spacing: 0.3rem; color: var(--gold); border: 1px solid var(--gold); padding: 5px 15px; display: inline-block; margin-bottom: 1rem; }
@@ -100,17 +114,16 @@
 
 <div id="stars"></div>
 
-<div id="intro-overlay">
-    <div class="intro-content">
+<div id="intro-overlay" class="overlay">
+    <div class="content-box">
         <h2>THE ORACULUM</h2>
         <p>ここは運命の神殿。あなたの歩みは「二分の一」の選択のみで決まります。</p>
-        <ul>
-            <li>✦ 左右どちらかの扉を選び、深淵へと進みなさい。</li>
-            <li>✦ 3歩進むごとに、運命を揺るがす「啓示」が訪れます。</li>
-            <li>✦ 5歩進むごとに、今の記録を確定させて退く権利が与えられます。</li>
-            <li>✦ 失敗すれば、その歩みは無に帰すでしょう。</li>
-        </ul>
-        <button style="width: 100%; margin-top: 2rem; border-color: var(--gold);" onclick="startGame()">儀式を始める</button>
+        
+        <div style="font-size: 0.8rem; color: var(--gold); margin-top: 20px;">― 過去の聖遺録 ―</div>
+        <div id="intro-ranking" class="ranking-list">
+            </div>
+
+        <button style="width: 100%; border-color: var(--gold); margin-top: 1rem;" onclick="startGame()">儀式を始める</button>
     </div>
 </div>
 
@@ -134,7 +147,8 @@
         </div>
     </div>
 
-    <div id="result-ui" style="margin: 20px 0; min-height: 80px;"></div>
+    <div id="result-ui" style="margin: 20px 0; min-height: 80px;">
+        </div>
     <button id="reset-btn" class="reset-btn" onclick="resetGame()">再誕</button>
 </div>
 
@@ -142,9 +156,12 @@
     let streak = 0;
     let isGolden = false;
     let isReversed = false;
-    const STORAGE_KEY = 'oraculum_game_final';
+    const STORAGE_KEY = 'oraculum_final_v5';
 
-    // 導入を閉じてゲームを開始
+    window.onload = () => {
+        updateRankingDisplay('intro-ranking');
+    };
+
     function startGame() {
         const intro = document.getElementById('intro-overlay');
         const main = document.getElementById('main-container');
@@ -152,7 +169,7 @@
         setTimeout(() => {
             intro.style.display = 'none';
             main.style.display = 'block';
-        }, 1000);
+        }, 800);
     }
 
     function handleInput(choice) {
@@ -212,11 +229,42 @@
     }
 
     function gameOver(msg = "審判が下りました。") {
+        saveScore(streak);
         clearEvent();
         document.getElementById('game-ui').style.display = 'none';
         document.getElementById('gamble-ui').style.display = 'none';
         document.getElementById('reset-btn').style.display = 'block';
-        document.getElementById('result-ui').innerHTML = `<span style="color:var(--gold);">${msg}</span><br>到達確率: ${(Math.pow(0.5, streak)*100).toFixed(6)}%`;
+        
+        const prob = (Math.pow(0.5, streak)*100).toFixed(6);
+        let resultHTML = `<span style="color:var(--gold);">${msg}</span><br>到達確率: ${prob}%<br>`;
+        resultHTML += `<div class="ranking-list" id="end-ranking" style="margin-top:10px;"></div>`;
+        
+        document.getElementById('result-ui').innerHTML = resultHTML;
+        updateRankingDisplay('end-ranking');
+    }
+
+    function saveScore(s) {
+        if (s === 0) return;
+        let r = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        r.push({score: s, date: new Date().toLocaleDateString()});
+        r.sort((a,b) => b.score - a.score);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(r.slice(0, 5)));
+    }
+
+    function updateRankingDisplay(targetId) {
+        const list = document.getElementById(targetId);
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        if (data.length === 0) {
+            list.innerHTML = "<p style='text-align:center; opacity:0.5;'>記録なし</p>";
+            return;
+        }
+        list.innerHTML = data.map((item, i) => `
+            <div class="ranking-item">
+                <span>Rank ${i+1}</span>
+                <span style="color:var(--gold)">${item.score} Steps</span>
+                <span style="font-size:0.7rem; opacity:0.6;">${item.date}</span>
+            </div>
+        `).join('');
     }
 
     function resetGame() {
