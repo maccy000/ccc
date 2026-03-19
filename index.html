@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oraculum - 聖者の賭け</title>
+    <title>Oraculum - 慈悲の審判</title>
     <style>
         :root {
             --deep-blue: #020617;
             --gold: #d4af37;
             --silver: #e2e8f0;
             --accent: #f59e0b;
+            --safety: #34d399;
         }
 
         body {
@@ -29,25 +30,18 @@
         .container {
             background: rgba(15, 23, 42, 0.8);
             backdrop-filter: blur(20px);
-            padding: 3rem;
+            padding: 2.5rem;
             border: 1px solid rgba(212, 175, 55, 0.3);
             text-align: center;
             width: 90%;
             max-width: 500px;
-            position: relative;
         }
 
-        /* 導入画面 */
-        .overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(2, 6, 23, 0.98);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 100;
-        }
-
-        .content-box {
-            max-width: 450px; width: 85%; padding: 2rem;
-            border: 1px solid var(--gold); text-align: center;
+        .life-area {
+            color: var(--safety);
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            letter-spacing: 0.2rem;
         }
 
         .rank-badge {
@@ -56,28 +50,26 @@
             display: inline-block; margin-bottom: 1rem;
         }
 
-        .current-streak { font-size: 6rem; font-weight: 100; margin: 0; line-height: 1; }
+        .current-streak { font-size: 5rem; font-weight: 100; margin: 0; }
         
-        .message-area { height: 60px; color: var(--accent); font-style: italic; margin: 20px 0; font-size: 0.9rem; }
+        .message-area { height: 50px; color: var(--accent); font-style: italic; margin: 15px 0; font-size: 0.85rem; }
 
-        .btn-group { display: flex; gap: 15px; margin: 20px 0; justify-content: center; flex-wrap: wrap; }
+        .btn-group { display: flex; gap: 12px; margin: 20px 0; justify-content: center; }
         
         button {
             background: transparent; color: var(--silver); border: 1px solid var(--silver);
-            padding: 15px 25px; cursor: pointer; transition: all 0.3s;
-            letter-spacing: 0.1rem; font-family: inherit; flex: 1; min-width: 120px;
+            padding: 15px; cursor: pointer; transition: all 0.3s;
+            letter-spacing: 0.1rem; font-family: inherit; flex: 1;
         }
-        button:hover { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
+        button:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        .choice-panel {
+        .special-panel {
             display: none; border: 1px double var(--gold);
-            padding: 20px; margin-top: 20px; animation: fadeIn 0.5s;
+            padding: 15px; margin-top: 15px; animation: fadeIn 0.5s;
         }
 
-        .ranking-box {
-            margin-top: 20px; border-top: 1px solid rgba(212,175,55,0.2);
-            padding-top: 15px; font-size: 0.8rem; text-align: left;
-        }
+        .hint { border-color: var(--safety) !important; box-shadow: 0 0 15px var(--safety); }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -86,133 +78,129 @@
 
 <div id="stars"></div>
 
-<div id="intro-overlay" class="overlay">
-    <div class="content-box">
-        <h2 style="color:var(--gold); letter-spacing:0.5rem;">ORACULUM</h2>
-        <p style="font-size:0.85rem; line-height:1.8;">
-            三連勝の節目に「聖者の賭け」が解禁されます。<br>
-            三分の一の試練を乗り越えし者には、<br>二歩分の前進が約束されるでしょう。
-        </p>
-        <button style="width:100%; border-color:var(--gold);" onclick="closeIntro()">儀式を始める</button>
-    </div>
-</div>
-
-<div class="container" id="main-ui" style="display:none;">
+<div class="container">
+    <div id="life" class="life-area">✦ 守護の輝石: 1 ✦</div>
     <div id="rank" class="rank-badge">PILGRIM</div>
     <div id="streak" class="current-streak">0</div>
-    <div id="message" class="message-area"></div>
+    <div id="message" class="message-area">運命を選択してください</div>
 
     <div id="standard-ui">
         <div class="btn-group">
-            <button onclick="play(2)">SINISTER</button>
-            <button onclick="play(2)">DEXTER</button>
+            <button id="btn-0" onclick="play(2, 0)">SINISTER</button>
+            <button id="btn-1" onclick="play(2, 1)">DEXTER</button>
         </div>
     </div>
 
-    <div id="branch-ui" class="choice-panel">
-        <p style="font-size:0.8rem; margin-bottom:15px;">運命の分岐点：挑戦を選びますか？</p>
+    <div id="branch-ui" class="special-panel">
+        <p style="font-size:0.75rem; margin-bottom:10px;">― 運命の分岐点 ―</p>
         <div class="btn-group">
             <button onclick="setupMode('normal')">通常の道 (1/2)</button>
-            <button style="border-color:var(--accent); color:var(--accent);" onclick="setupMode('gamble')">聖者の賭け (1/3)</button>
+            <button style="border-color:var(--accent);" onclick="setupMode('gamble')">聖者の賭け (1/3)</button>
         </div>
     </div>
 
-    <div id="triple-ui" class="choice-panel">
+    <div id="triple-ui" class="special-panel">
         <div class="btn-group">
-            <button onclick="play(3)">TRIAD I</button>
-            <button onclick="play(3)">TRIAD II</button>
-            <button onclick="play(3)">TRIAD III</button>
+            <button id="t-0" onclick="play(3, 0)">I</button>
+            <button id="t-1" onclick="play(3, 1)">II</button>
+            <button id="t-2" onclick="play(3, 2)">III</button>
         </div>
     </div>
 
-    <div id="result-log" style="margin-top:20px; min-height:50px;"></div>
-    <button id="reset-btn" style="display:none; width:100%; margin-top:20px;" onclick="location.reload()">再誕</button>
-    
-    <div id="ranking" class="ranking-box"></div>
+    <div id="result-log" style="margin-top:15px; min-height:40px; font-size:0.8rem;"></div>
+    <button id="reset-btn" style="display:none; width:100%; margin-top:10px;" onclick="location.reload()">再挑戦</button>
 </div>
 
 <script>
     let streak = 0;
-    const STORAGE_KEY = 'oraculum_saint_rank';
-
-    function closeIntro() {
-        document.getElementById('intro-overlay').style.display = 'none';
-        document.getElementById('main-ui').style.display = 'block';
-        showRanking();
-    }
+    let lives = 1; // 最初から1回ミスOK
+    let isGuiding = false; // ヒントモード
 
     function setupMode(mode) {
         document.getElementById('branch-ui').style.display = 'none';
         if (mode === 'gamble') {
             document.getElementById('triple-ui').style.display = 'block';
-            document.getElementById('message').innerText = "三位一体の試練：的中すれば二歩進む";
+            document.getElementById('message').innerText = "三位一体の試練：成功すれば二歩進む";
         } else {
             document.getElementById('standard-ui').style.display = 'block';
-            document.getElementById('message').innerText = "堅実なる歩み";
+            document.getElementById('message').innerText = "堅実なる道";
         }
     }
 
-    function play(chance) {
-        const isWin = Math.random() < (1 / chance);
+    function play(chance, choiceIndex) {
+        const winningNumber = Math.floor(Math.random() * chance);
         const resultLog = document.getElementById('result-log');
         
-        // UIを一旦隠す
+        // UIリセット
         document.getElementById('standard-ui').style.display = 'none';
         document.getElementById('triple-ui').style.display = 'none';
-        document.getElementById('message').innerText = "";
+        removeHints();
 
-        if (isWin) {
-            // 1/3なら+2、それ以外(1/2)なら+1
+        if (choiceIndex === winningNumber) {
             const gain = (chance === 3) ? 2 : 1;
             streak += gain;
             document.getElementById('streak').innerText = streak;
-            updateRank();
+            
+            // 5連勝ごとに次の回にヒント（導きの光）
+            if (streak > 0 && streak % 5 === 0) {
+                isGuiding = true;
+                resultLog.innerHTML = "<span style='color:var(--safety)'>「導きの光」が次の一歩を照らします。</span>";
+            } else {
+                resultLog.innerHTML = "運命はあなたの味方です。";
+            }
 
-            // 3連勝(またはそれ以上)のチェック
             if (streak > 0 && streak % 3 === 0) {
                 document.getElementById('branch-ui').style.display = 'block';
-                resultLog.innerHTML = `<span style="color:var(--gold)">奇跡の連鎖。さらなる賭けに挑みますか？</span>`;
             } else {
-                document.getElementById('standard-ui').style.display = 'block';
-                resultLog.innerHTML = "運命は継続を認めました。";
+                showNormalUI();
             }
         } else {
-            gameOver();
+            // ミスした場合
+            if (lives > 0) {
+                lives--;
+                updateLifeDisplay();
+                resultLog.innerHTML = "<span style='color:var(--gold)'>守護の輝石が砕け、命を繋ぎ止めた...</span>";
+                showNormalUI();
+            } else {
+                gameOver();
+            }
         }
+        updateRank();
+    }
+
+    function showNormalUI() {
+        document.getElementById('standard-ui').style.display = 'block';
+        if (isGuiding) {
+            // 50%の確率で正解の方を光らせる（100%だと簡単すぎるのでヒントとして）
+            const hintIdx = Math.floor(Math.random() * 2);
+            document.getElementById(`btn-${hintIdx}`).classList.add('hint');
+            document.getElementById('message').innerText = "導きの光が扉を照らしている...";
+            isGuiding = false;
+        } else {
+            document.getElementById('message').innerText = "運命を選択してください";
+        }
+    }
+
+    function removeHints() {
+        document.getElementById('btn-0').classList.remove('hint');
+        document.getElementById('btn-1').classList.remove('hint');
+    }
+
+    function updateLifeDisplay() {
+        document.getElementById('life').innerText = `✦ 守護の輝石: ${lives} ✦`;
+        if (lives === 0) document.getElementById('life').style.color = "#666";
     }
 
     function updateRank() {
         const r = document.getElementById('rank');
-        if (streak >= 7) r.innerText = "OBSERVER";
-        if (streak >= 15) r.innerText = "TRANSCENDER";
-        if (streak >= 30) r.innerText = "ORACLE";
+        if (streak >= 10) r.innerText = "OBSERVER";
+        if (streak >= 20) r.innerText = "ORACLE";
     }
 
     function gameOver() {
-        const prob = (Math.pow(0.5, streak) * 100).toFixed(6);
-        document.getElementById('result-log').innerHTML = 
-            `<span style="color:var(--gold)">審判が下りました。</span><br>到達確率: ${prob}%`;
+        document.getElementById('message').innerText = "運命の糸が切れました";
+        document.getElementById('result-log').innerHTML = `最終到達: ${streak} 連勝`;
         document.getElementById('reset-btn').style.display = 'block';
-        saveScore(streak);
-        showRanking();
-    }
-
-    function saveScore(s) {
-        if (s === 0) return;
-        let data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        data.push({score: s, date: new Date().toLocaleDateString()});
-        data.sort((a,b) => b.score - a.score);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.slice(0, 5)));
-    }
-
-    function showRanking() {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        const box = document.getElementById('ranking');
-        if (data.length === 0) return;
-        box.innerHTML = "<div style='text-align:center; margin-bottom:10px; opacity:0.6'>聖遺録</div>" + 
-            data.map((d, i) => `<div style="display:flex; justify-content:space-between; padding:2px 0;">
-                <span>Rank ${i+1}</span><span>${d.score} Steps</span>
-            </div>`).join('');
     }
 </script>
 </body>
